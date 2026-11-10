@@ -223,7 +223,9 @@ var FOODS=[
 ['amendoim','Amendoim torrado',606,22.5,18.7,54,0,''],['castanha','Castanha-do-pará',643,14.5,15.1,63.5,4,'castanha'],['azeite','Azeite de oliva',884,0,0,100,8,'colher de sopa'],['manteiga','Manteiga',726,0.4,0.1,82.4,10,'porção'],
 ['alface','Alface',11,1.3,1.7,0.2,0,''],['tomate','Tomate',15,1.1,3.1,0.2,0,''],['brocolis','Brócolis cozido',25,2.1,4.4,0.5,0,''],['cenoura','Cenoura crua',34,1.3,7.7,0.2,0,''],
 ['chocolate','Chocolate ao leite',540,7.2,59.6,30.3,25,'barrinha'],['refri','Refrigerante (ml)',42,0,10.5,0,350,'lata'],['cerveja','Cerveja (ml)',41,0.3,3.3,0,350,'lata'],['acucar','Açúcar',387,0,99.5,0,5,'colher de chá'],
-['pizza','Pizza de muçarela',276,11,33,11,110,'fatia'],['hamburguer','Hambúrguer de lanchonete',260,13,25,12,200,'lanche']];
+['pizza','Pizza de muçarela',276,11,33,11,110,'fatia'],['hamburguer','Hambúrguer de lanchonete',260,13,25,12,200,'lanche'],
+['paoforma','Pão de forma (sanduíche)',266,7.9,49.2,3.7,25,'fatia'],['frangodesf','Frango desfiado (peito cozido)',163,31.5,0,3.2,0,''],['requeijaolight','Requeijão light',180,11,4,13,15,'colher'],
+['queijoprato','Queijo prato',360,22.7,1.9,29.1,20,'fatia'],['ketchup','Ketchup',100,1.2,24,0.1,15,'sachê'],['patinhocru','Patinho moído cru',133,21.7,0,4.5,0,'']];
 var BUILTIN={};FOODS.forEach(function(f){BUILTIN['b:'+f[0]]={id:'b:'+f[0],nome:f[1],kcal:f[2],prot:f[3],carb:f[4],gord:f[5],u:f[6],un:f[7]};});
 function foodById(id){return BUILTIN[id]||(S.alimentos||[]).find(function(x){return x.id===id;})||null;}
 function allFoods(){return Object.keys(BUILTIN).map(function(k){return BUILTIN[k];}).concat(S.alimentos||[]);}
@@ -231,7 +233,8 @@ function foodByName(n){var k=norm(n);return allFoods().find(function(f){return n
 function grams(e,f){f=f||foodById(e.food);if(!f)return 0;return e.modo==='un'&&f.u?e.qtd*f.u:e.qtd;}
 function mac(e){var f=foodById(e.food);if(!f)return {kcal:0,prot:0,carb:0,gord:0};var g=grams(e,f)/100;return {kcal:f.kcal*g,prot:f.prot*g,carb:f.carb*g,gord:f.gord*g};}
 function sumMac(list){return list.reduce(function(a,e){var m=mac(e);a.kcal+=m.kcal;a.prot+=m.prot;a.carb+=m.carb;a.gord+=m.gord;return a;},{kcal:0,prot:0,carb:0,gord:0});}
-function qtdTxt(e){var f=foodById(e.food);if(e.modo==='un'&&f&&f.u)return n1(e.qtd)+' '+(f.un||'un');return n0(e.qtd)+(f&&/\(ml\)/.test(f.nome)?' ml':' g');}
+function plural(u){if(!u)return 'un';var m={'pão':'pães','colher':'colheres','colher de sopa':'colheres de sopa','colher de chá':'colheres de chá','porção':'porções'};return m[u]||(/s$/.test(u)?u:u+'s');}
+function qtdTxt(e){var f=foodById(e.food);if(e.modo==='un'&&f&&f.u)return n1(e.qtd)+' '+(e.qtd>1?plural(f.un):(f.un||'un'));return n0(e.qtd)+(f&&/\(ml\)/.test(f.nome)?' ml':' g');}
 
 /* ---------- exercícios comuns ---------- */
 var EXS=['Peck Deck (Máquina)','Supino Reto (Máquina)','Supino Reto (Barra)','Supino Inclinado (Máquina)','Supino Inclinado (Halteres)','Crucifixo (Halteres)','Crossover Alto (Polia)','Crossover Baixo (Polia)','Desenvolvimento (Máquina)','Desenvolvimento Arnold (Halteres)','Elevação Lateral (Halteres)','Elevação Lateral (Polia)','Elevação Frontal (Halteres)','Crucifixo Invertido (Máquina)','Tríceps (Máquina)','Tríceps Unilateral (Polia)','Tríceps Corda (Polia)','Tríceps Overhead Corda (Polia)','Tríceps Testa (Barra)','Mergulho (Paralelas)','Puxada Frontal (Máquina)','Puxada Atrás da Nuca (Máquina)','Puxada Fechada (Máquina)','Barra Fixa','Remada Baixa (Máquina)','Remada Articulada (Máquina)','Remada Upperback (Máquina)','Remada Curvada (Barra)','Remada Unilateral (Halter)','Pulldown (Polia)','Rosca (Máquina)','Rosca Direta (Barra)','Rosca Martelo (Halteres)','Rosca Corda (Polia)','Rosca Scott (Máquina)','Agachamento Livre (Barra)','Agachamento Hack (Máquina)','Agachamento (Smith)','Leg Press (Máquina)','Cadeira Extensora (Máquina)','Cadeira Extensora Unilateral (Máquina)','Mesa Flexora (Máquina)','Cadeira Flexora (Máquina)','Stiff (Barra)','Glúteos (Máquina)','Elevação Pélvica (Barra)','Cadeira Abdutora (Máquina)','Cadeira Adutora (Máquina)','Panturrilha em Pé (Smith)','Panturrilha em Pé (Máquina)','Panturrilha Sentado (Máquina)','Abdominal (Polia)','Abdominal na Polia (Polia)','Abdominal Supra','Prancha','Esteira','Bicicleta'];
@@ -241,7 +244,18 @@ var MED=[['peito','Peito'],['cintura','Cintura'],['abdomen','Abdômen'],['quadri
 function empty(){return {v:2,meta:{kcal:0,prot:0,carb:0,gord:0},perfil:{sexo:'m',idade:'',altura:'',ativ:1.55,obj:'manter'},
   refeicoes:['Café da manhã','Almoço','Lanche da tarde','Jantar'],plano:[],diario:{},alimentos:[],
   treinos:[],semana:{'0':'','1':'','2':'','3':'','4':'','5':'','6':''},sessoes:[],ativo:null,pesos:[],medidas:[],
-  prev:{meta:0,gasto:0,comer:0,treinos:4,kcalTreino:300},cardio:[]};}
+  prev:{meta:0,gasto:0,comer:0,treinos:4,kcalTreino:300},cardio:[],salvas:[]};}
+function I(food,qtd,modo){return {id:uid(),food:'b:'+food,qtd:qtd,modo:modo||'g'};}
+function modeloRefeicoes(){
+  var cafe={id:uid(),nome:'Café da manhã padrão',itens:[I('ovo',3,'un'),I('paoforma',2,'un'),I('banana',1,'un')]};
+  var almoco={id:uid(),nome:'Almoço: arroz e frango',itens:[I('arroz',150),I('frango',200)]};
+  var lanche={id:uid(),nome:'Lanche: sanduíche de frango',itens:[I('frangodesf',100),I('requeijaolight',30),I('paoforma',2,'un')]};
+  var janta1={id:uid(),nome:'Janta: hambúrguer caseiro',itens:[I('patinhocru',100),I('paoforma',2,'un'),I('queijoprato',1,'un'),I('ketchup',30)]};
+  var janta2={id:uid(),nome:'Janta: arroz e frango',itens:[I('arroz',200),I('frango',200)]};
+  S.salvas=(S.salvas||[]).concat([cafe,almoco,lanche,janta1,janta2]);
+  // plano de dieta: só preenche se estiver vazio
+  if(!S.plano.length){[[cafe,S.refeicoes[0]],[almoco,S.refeicoes[1]],[lanche,S.refeicoes[2]],[janta1,S.refeicoes[3]]].forEach(function(p){if(p[1])p[0].itens.forEach(function(e){S.plano.push({id:uid(),ref:p[1],food:e.food,qtd:e.qtd,modo:e.modo});});});}
+}
 function migrate(d){
   if(!d||!d.v)return null;var e=empty();Object.keys(e).forEach(function(k){if(d[k]==null)d[k]=e[k];});
   if(d.v<2){ // v1: séries/reps/carga iguais → lista de séries
@@ -560,10 +574,21 @@ function mealBlocks(list,ctx){
   return refs.map(function(r){var it=list.filter(function(e){return e.ref===r;}),t=sumMac(it);
     return '<section class="card"><div class="head"><h2>'+esc(r)+'</h2><span class="small">'+n0(t.kcal)+' kcal · P '+n0(t.prot)+' · C '+n0(t.carb)+' · G '+n0(t.gord)+'</span></div>'+
       (it.length?'<ul class="list">'+it.map(function(e){var f=foodById(e.food),m=mac(e);return '<li><span class="n">'+esc(f?f.nome:'Alimento removido')+' <span class="small">· '+qtdTxt(e)+'</span></span><span class="v">'+n0(m.kcal)+' kcal</span><button class="del" data-act="delFood" data-ctx="'+ctx+'" data-id="'+e.id+'" aria-label="Remover '+esc(f?f.nome:'')+'">'+TRASH+'</button></li>';}).join('')+'</ul>':'')+
-      '<div><button class="btn sm" data-act="addFood" data-ctx="'+ctx+'" data-ref="'+esc(r)+'">+ Alimento</button></div></section>';}).join('');}
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="addFood" data-ctx="'+ctx+'" data-ref="'+esc(r)+'">+ Alimento</button>'+((S.salvas||[]).length?'<button class="btn sm" data-act="addSalva" data-ctx="'+ctx+'" data-ref="'+esc(r)+'">+ Refeição salva</button>':'')+'</div></section>';}).join('');}
+function vRefeicoes(){
+  var ss=S.salvas||[];
+  var h='<section class="card"><div class="head"><h2>Refeições salvas</h2><button class="btn sm primary" data-act="novaSalva">+ Nova</button></div><div class="small">Monte uma vez e coloque em qualquer refeição do dia: no Diário ou no plano de Dieta, use “+ Refeição salva”.</div>'+
+    (ss.length?'':'<button class="btn" data-act="carregarRefeicoes">Carregar minhas refeições (café, almoço, lanche e 2 jantas)</button>')+'</section>';
+  return h+ss.map(function(s){var t=sumMac(s.itens);
+    return '<section class="card" data-sid="'+s.id+'"><div class="head"><h2>'+esc(s.nome)+'</h2><button class="kebab" data-act="menuSalva" aria-label="Opções de '+esc(s.nome)+'">'+DOTS+'</button></div>'+
+      '<div class="small"><b style="color:var(--text)">'+n0(t.kcal)+' kcal</b> · proteína '+n0(t.prot)+' g · carbo '+n0(t.carb)+' g · gordura '+n0(t.gord)+' g</div>'+
+      (s.itens.length?'<ul class="list">'+s.itens.map(function(e){var f=foodById(e.food),m=mac(e);return '<li><span class="n">'+esc(f?f.nome:'Alimento removido')+' <span class="small">· '+qtdTxt(e)+'</span></span><span class="v">'+n0(m.kcal)+' kcal</span><button class="del" data-act="delFood" data-ctx="salva" data-id="'+e.id+'" aria-label="Remover '+esc(f?f.nome:'')+'">'+TRASH+'</button></li>';}).join('')+'</ul>':'<div class="empty">Sem alimentos ainda.</div>')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="addFood" data-ctx="salva" data-ref="">+ Alimento</button><button class="btn sm primary" data-act="usarSalva">Usar '+(ui.dia===TODAY?'hoje':'em '+fmtD(ui.dia))+'</button></div></section>';}).join('');
+}
+function salvaTo(s,ctx,ref){var dst=ctx==='plano'?S.plano:(S.diario[ui.dia]||(S.diario[ui.dia]=[]));s.itens.forEach(function(e){dst.push({id:uid(),ref:ref,food:e.food,qtd:e.qtd,modo:e.modo});});}
 function vComida(sub){
-  var h=hdr('Comida','','')+'<nav class="seg"><a href="#comida"'+(!sub?' aria-current="page"':'')+'>Diário</a><a href="#comida/dieta"'+(sub==='dieta'?' aria-current="page"':'')+'>Dieta</a><a href="#comida/alimentos"'+(sub==='alimentos'?' aria-current="page"':'')+'>Alimentos</a></nav>';
-  if(sub==='dieta')return h+vDieta();if(sub==='alimentos')return h+vAlimentos();
+  var h=hdr('Comida','','')+'<nav class="seg"><a href="#comida"'+(!sub?' aria-current="page"':'')+'>Diário</a><a href="#comida/refeicoes"'+(sub==='refeicoes'?' aria-current="page"':'')+'>Refeições</a><a href="#comida/dieta"'+(sub==='dieta'?' aria-current="page"':'')+'>Dieta</a><a href="#comida/alimentos"'+(sub==='alimentos'?' aria-current="page"':'')+'>Alimentos</a></nav>';
+  if(sub==='dieta')return h+vDieta();if(sub==='alimentos')return h+vAlimentos();if(sub==='refeicoes')return h+vRefeicoes();
   var d=ui.dia,list=S.diario[d]||[],t=sumMac(list);
   return h+'<section class="card"><div class="head"><button class="btn sm" data-act="diaPrev" aria-label="Dia anterior">‹</button><b style="text-align:center;flex:1">'+(d===TODAY?'Hoje, ':'')+fmtD(d,true)+'</b><button class="btn sm" data-act="diaNext" aria-label="Próximo dia">›</button></div>'+
     kcalBlock(t,S.meta)+'<div style="display:flex;gap:8px;flex-wrap:wrap">'+(d!==TODAY?'<button class="btn sm" data-act="diaHoje">Hoje</button>':'')+'<button class="btn sm" data-act="copiarPlano">Copiar plano de dieta</button><button class="btn sm" data-act="copiarOntem">Copiar dia anterior</button></div></section>'+mealBlocks(list,'diario');
@@ -726,8 +751,21 @@ document.addEventListener('click',function(e){
   case 'delMedida':if(confirm('Excluir as medidas de '+fmtD(t.dataset.d)+'?')){S.medidas=S.medidas.filter(function(x){return x.data!==t.dataset.d;});commit();}return;
   case 'verMed':ui.med=t.dataset.k;render();return;
   case 'delSessao':var ss=S.sessoes.find(function(x){return x.id===t.dataset.id;});if(ss&&confirm('Excluir o treino de '+fmtD(ss.data)+' do histórico?')){S.sessoes.splice(S.sessoes.indexOf(ss),1);commit();}return;
-  case 'addFood':openFood(t.dataset.ctx,t.dataset.ref);return;
-  case 'delFood':var arr=t.dataset.ctx==='plano'?S.plano:(S.diario[ui.dia]||[]);var fi=arr.findIndex(function(x){return x.id===t.dataset.id;});if(fi>-1){arr.splice(fi,1);commit();}return;
+  case 'addFood':var sidw=t.closest('[data-sid]');openFood(t.dataset.ctx,t.dataset.ref,sidw?sidw.dataset.sid:'');return;
+  case 'carregarRefeicoes':modeloRefeicoes();commit();return;
+  case 'novaSalva':var nsv={id:uid(),nome:'Nova refeição',itens:[]};S.salvas.push(nsv);commit();menuRenSalva(nsv.id);return;
+  case 'menuSalva':var ms=salvaById(t.closest('[data-sid]').dataset.sid);openSheet('<h2>'+esc(ms.nome)+'</h2><button class="opt" data-act="renSalva">Renomear</button><button class="opt" data-act="dupSalva">Duplicar</button><button class="opt danger" data-act="delSalva">Excluir</button>',{sid:ms.id});return;
+  case 'renSalva':menuRenSalva(ctxMenu.sid);return;
+  case 'renSalvaOk':var rs=salvaById(ctxMenu.sid),rnv=document.getElementById('rnInput').value.trim();if(rs&&rnv){rs.nome=rnv;commit();}return;
+  case 'dupSalva':var ds0=salvaById(ctxMenu.sid),cp0=JSON.parse(JSON.stringify(ds0));cp0.id=uid();cp0.nome=ds0.nome+' (cópia)';cp0.itens.forEach(function(x){x.id=uid();});S.salvas.splice(S.salvas.indexOf(ds0)+1,0,cp0);commit();return;
+  case 'delSalva':var dsv=salvaById(ctxMenu.sid);if(dsv&&confirm('Excluir a refeição salva “'+dsv.nome+'”? O que já foi anotado no diário continua.')){S.salvas.splice(S.salvas.indexOf(dsv),1);commit();}return;
+  case 'usarSalva':var us=salvaById(t.closest('[data-sid]').dataset.sid);
+    openSheet('<h2>Colocar “'+esc(us.nome)+'” em…</h2><div class="small">'+(ui.dia===TODAY?'Hoje':fmtD(ui.dia,true))+'</div>'+S.refeicoes.map(function(r){return '<button class="opt" data-act="slotSalva" data-ref="'+esc(r)+'">'+esc(r)+'</button>';}).join(''),{sid:us.id});return;
+  case 'slotSalva':salvaTo(salvaById(ctxMenu.sid),'diario',t.dataset.ref);commit();location.hash='comida';return;
+  case 'addSalva':openSheet('<h2>Refeição salva em '+esc(t.dataset.ref)+'</h2>'+S.salvas.map(function(s){return '<button class="opt" data-act="escolherSalva" data-sid="'+s.id+'"><span style="flex:1">'+esc(s.nome)+'</span><span class="small">'+n0(sumMac(s.itens).kcal)+' kcal</span></button>';}).join(''),{ctx:t.dataset.ctx,ref:t.dataset.ref});return;
+  case 'escolherSalva':salvaTo(salvaById(t.dataset.sid),ctxMenu.ctx,ctxMenu.ref);commit();return;
+  case 'delFood':if(t.dataset.ctx==='salva'){var sv2=salvaById(t.closest('[data-sid]').dataset.sid);sv2.itens=sv2.itens.filter(function(x){return x.id!==t.dataset.id;});commit();return;}
+    var arr=t.dataset.ctx==='plano'?S.plano:(S.diario[ui.dia]||[]);var fi=arr.findIndex(function(x){return x.id===t.dataset.id;});if(fi>-1){arr.splice(fi,1);commit();}return;
   case 'diaPrev':ui.dia=addDays(ui.dia,-1);render();return;
   case 'diaNext':ui.dia=addDays(ui.dia,1);render();return;
   case 'diaHoje':ui.dia=TODAY;render();return;
@@ -752,6 +790,8 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('keydown',function(e){var g=e.target.closest&&e.target.closest('[data-go]');if(g&&(e.key==='Enter'||e.key===' ')&&e.target===g){e.preventDefault();location.hash=g.dataset.go;}
   if(e.key==='Enter'&&e.target.id==='rnInput'){e.preventDefault();var b=sheetBody.querySelector('[data-act$="Ok"]');if(b)b.click();}});
+function salvaById(id){return (S.salvas||[]).find(function(x){return x.id===id;})||null;}
+function menuRenSalva(sid){var s=salvaById(sid);openSheet('<h2>Nome da refeição</h2><label class="field">Nome<input type="text" id="rnInput" value="'+esc(s.nome)+'"></label><button class="opt" data-act="renSalvaOk" style="background:var(--acc);color:#fff;justify-content:center">Salvar</button>',{sid:sid});refocus('rnInput');}
 function menuRenomear(tid){var t=treinoById(tid);openSheet('<h2>Nome do treino</h2><label class="field">Nome<input type="text" id="rnInput" value="'+esc(t.nome)+'"></label><button class="opt" data-act="renomearOk" style="background:var(--acc);color:#fff;justify-content:center">Salvar</button>',{tid:tid});refocus('rnInput');}
 function diasHtml(t){return '<h2>Dias do '+esc(t.nome)+'</h2><div class="small">Toque nos dias em que você faz este treino. Ele aparece como sugestão em Início.</div><div class="chips" style="--c:'+corHex(t.cor)+'">'+[0,1,2,3,4,5,6].map(function(d){var other=S.semana[d]&&S.semana[d]!==t.id?treinoById(S.semana[d]):null;return '<button class="chip" data-act="toggleDia" data-d="'+d+'" aria-pressed="'+(S.semana[d]===t.id)+'">'+DOWL[d].slice(0,3)+(other?' <span class="small">('+esc(other.nome)+')</span>':'')+'</button>';}).join('')+'</div>';}
 function setPeso(d,kg){var p=S.pesos.find(function(x){return x.data===d;});if(p)p.kg=kg;else S.pesos.push({data:d,kg:kg});}
@@ -777,12 +817,12 @@ document.addEventListener('input',function(e){
 
 /* ---------- adicionar alimento ---------- */
 var dlg=document.getElementById('dlg'),form=document.getElementById('dlgForm'),fctx=null;
-function openFood(ctx,ref){
-  fctx={ctx:ctx,ref:ref};var refs=S.refeicoes.slice();if(refs.indexOf(ref)<0)refs.push(ref);
+function openFood(ctx,ref,sid){
+  fctx={ctx:ctx,ref:ref,sid:sid};var refs=S.refeicoes.slice();if(ref&&refs.indexOf(ref)<0)refs.push(ref);
   form.innerHTML='<h2 style="margin:0;font-size:17px">Adicionar alimento</h2>'+
    '<label class="field">Alimento<input type="text" name="food" list="dlFoods" required placeholder="Digite: arroz, frango, ovo…" autocomplete="off"></label>'+
    '<div class="row"><label class="field">Quantidade<input type="text" name="qtd" inputmode="decimal" required value="100"></label><label class="field">Medida<select name="modo"><option value="g">gramas / ml</option></select></label></div>'+
-   '<label class="field">Refeição<select name="ref">'+refs.map(function(r){return '<option'+(r===ref?' selected':'')+'>'+esc(r)+'</option>';}).join('')+'</select></label>'+
+   (ctx==='salva'?'':'<label class="field">Refeição<select name="ref">'+refs.map(function(r){return '<option'+(r===ref?' selected':'')+'>'+esc(r)+'</option>';}).join('')+'</select></label>')+
    '<div class="preview" id="fprev">Escolha um alimento da lista.</div><div class="small">Não achou? Cadastre na aba Alimentos.</div>'+
    '<div class="actions"><button class="btn" value="cancel" formnovalidate>Cancelar</button><button class="btn primary" value="ok">Adicionar</button></div>';
   dlg.returnValue='';dlg.showModal();form.querySelector('[name=food]').focus();
@@ -795,7 +835,8 @@ dlg.addEventListener('close',function(){
   if(dlg.returnValue!=='ok'||!fctx)return;var fd=new FormData(form),f=foodByName(fd.get('food'));
   if(!f){alert('Alimento não encontrado. Escolha uma das sugestões ou cadastre na aba Alimentos.');return;}
   var e={id:uid(),ref:String(fd.get('ref')),food:f.id,qtd:pnum(fd.get('qtd'))||0,modo:fd.get('modo')==='un'?'un':'g'};
-  if(fctx.ctx==='plano')S.plano.push(e);else(S.diario[ui.dia]||(S.diario[ui.dia]=[])).push(e);dlg.returnValue='';commit();
+  if(fctx.ctx==='salva'){var sv=(S.salvas||[]).find(function(x){return x.id===fctx.sid;});if(sv){delete e.ref;sv.itens.push(e);}}
+  else if(fctx.ctx==='plano')S.plano.push(e);else(S.diario[ui.dia]||(S.diario[ui.dia]=[])).push(e);dlg.returnValue='';commit();
 });
 
 /* ---------- tema e login ---------- */
