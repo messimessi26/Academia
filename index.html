@@ -37,11 +37,15 @@ a{color:var(--accText)}
 .hdr h1{margin:0;font-size:19px;font-weight:600;text-align:center}
 .hdr .r{justify-self:end}
 .streak{font-weight:700;font-size:16px;display:inline-flex;align-items:center;gap:4px}
-.week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;padding:4px 0 18px}
+.wknav{display:flex;align-items:center;gap:6px;justify-content:space-between;font-size:13px;font-weight:600;color:var(--muted);text-transform:capitalize}
+.wknav span{flex:1;text-align:center}
+.week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;padding:2px 0 14px;gap:2px}
+.week button{border:0;background:transparent;border-radius:16px;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center}
 .week span{font-size:13px;color:var(--muted)}
-.week b{display:block;font-size:20px;font-weight:500;color:var(--muted);margin-top:8px;position:relative}
+.week b{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;font-size:18px;font-weight:500;color:var(--muted);margin-top:4px}
 .week .today b{color:var(--text);font-weight:800}
-.week i{display:block;width:6px;height:6px;border-radius:50%;margin:5px auto 0}
+.week .sel b{background:var(--text);color:var(--bg);font-weight:800}
+.week i{display:block;width:6px;height:6px;border-radius:50%;margin:4px auto 0}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 @media (min-width:700px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .tile{position:relative;border-radius:22px;padding:16px;min-height:132px;color:#fff;background:var(--c);display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;box-shadow:var(--shadow);overflow:hidden;border:0;text-align:left}
@@ -193,6 +197,7 @@ var TRASH='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-wi
 var DOTS='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
 var CHECK='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 var DOWN='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+var LEFT='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
 var RIGHT='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 var DUMB='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>';
 
@@ -250,7 +255,7 @@ function modeloPPLUL(){
   var lower={id:uid(),nome:'Lower',cor:'laranja',ex:[E('Leg Press (Máquina)'),E('Mesa Flexora (Máquina)'),E('Cadeira Extensora Unilateral (Máquina)'),E('Panturrilha em Pé (Máquina)'),E('Abdominal na Polia (Polia)')]};
   S.treinos=S.treinos.concat([push,pull,legs,upper,lower]);
 }
-var S=null,ui={dia:TODAY,open:{},prog:'',med:'cintura',timerEnd:0,busca:''},R={v:'inicio',arg:''};
+var S=null,ui={dia:TODAY,sel:TODAY,open:{},prog:'',med:'cintura',timerEnd:0,busca:''},R={v:'inicio',arg:''};
 
 /* ---------- armazenamento: navegador + Firebase ---------- */
 var LS_KEY='meu-treino-v1',APP_ID='academia';
@@ -308,9 +313,9 @@ function sugerido(){var t=treinoById(S.semana[String(toD(TODAY).getDay())]);if(t
   var best=null,bd='9999';S.treinos.forEach(function(x){var l=lastSessaoDe(x.id),d=l?l.data:'0000';if(d<bd){bd=d;best=x;}});return best;}
 function exList(tid){return S.ativo&&S.ativo.treino===tid?S.ativo.ex:(treinoById(tid)||{ex:[]}).ex;}
 function ativoStats(){var v=0,n=0;if(S.ativo)S.ativo.ex.forEach(function(e){e.sets.forEach(function(s){if(s.ok){n++;v+=s.carga*s.reps;}});});return {vol:v,n:n};}
-function iniciar(tid){
+function iniciar(tid,data){
   var t=treinoById(tid);if(!t)return;
-  S.ativo={treino:t.id,nome:t.nome,cor:t.cor,data:TODAY,inicio:Date.now(),ex:t.ex.map(function(e){return {id:e.id,nome:e.nome,nota:e.nota||'',sets:e.sets.map(function(s){return {carga:s.carga,reps:s.reps,desc:s.desc,ok:false};})};})};
+  S.ativo={treino:t.id,nome:t.nome,cor:t.cor,data:data||TODAY,inicio:Date.now(),ex:t.ex.map(function(e){return {id:e.id,nome:e.nome,nota:e.nota||'',sets:e.sets.map(function(s){return {carga:s.carga,reps:s.reps,desc:s.desc,ok:false};})};})};
 }
 function finalizar(){
   var a=S.ativo,t=treinoById(a.treino);
@@ -321,7 +326,7 @@ function finalizar(){
   S.sessoes.push({id:uid(),data:a.data,treino:a.treino,treinoNome:a.nome,cor:a.cor,ex:exs,min:Math.round((Date.now()-a.inicio)/60000)});
   // o treino passa a abrir com os valores de hoje (carga e reps da última vez)
   if(t)t.ex=a.ex.map(function(e){return {id:e.id||uid(),nome:e.nome,nota:e.nota||'',sets:e.sets.map(function(s){return {carga:s.carga,reps:s.reps,desc:s.desc};})};});
-  S.ativo=null;stopTimer();commit();location.hash='inicio';
+  ui.sel=a.data;S.ativo=null;stopTimer();commit();location.hash=a.data===TODAY?'inicio':'treinos';
 }
 
 /* ---------- corpo e previsão ---------- */
@@ -362,10 +367,22 @@ function kcalBlock(t,meta){var rest=meta.kcal-t.kcal;
     bar(t.kcal,meta.kcal,'var(--acc)')+
     [['Proteína',t.prot,meta.prot,'var(--prot)'],['Carboidrato',t.carb,meta.carb,'var(--carb)'],['Gordura',t.gord,meta.gord,'var(--gord)']].map(function(r){
       return '<div class="macro"><span>'+r[0]+'</span>'+bar(r[1],r[2],r[3])+'<span><b>'+n0(r[1])+'</b>'+(r[2]?' / '+n0(r[2]):'')+' g</span></div>';}).join('');}
-function weekStrip(){var d=toD(TODAY),dom=addDays(TODAY,-d.getDay()),h='';
+var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function weekStrip(){var sel=ui.sel,d=toD(sel),dom=addDays(sel,-d.getDay()),h='';
   for(var i=0;i<7;i++){var di=addDays(dom,i),ss=treinosNoDia(di);
-    h+='<div class="'+(di===TODAY?'today':'')+'"><span>'+DOW[i]+'</span><b>'+toD(di).getDate()+'</b>'+(ss.length?'<i style="background:'+corHex(ss[0].cor)+'"></i>':'<i></i>')+'</div>';}
-  return '<div class="week">'+h+'</div>';}
+    h+='<button class="'+(di===TODAY?'today ':'')+(di===sel?'sel':'')+'" data-act="selDia" data-d="'+di+'" aria-pressed="'+(di===sel)+'" aria-label="'+fmtD(di,true)+(ss.length?', treinou '+esc(ss[0].treinoNome):'')+'"><span>'+DOW[i]+'</span><b>'+toD(di).getDate()+'</b>'+(ss.length?'<i style="background:'+corHex(ss[0].cor)+'"></i>':'<i></i>')+'</button>';}
+  var m=toD(dom),m2=toD(addDays(dom,6)),mes=m.getMonth()===m2.getMonth()?MESES[m.getMonth()]+' '+m.getFullYear():MESES[m.getMonth()].slice(0,3)+' – '+MESES[m2.getMonth()].slice(0,3)+' '+m2.getFullYear();
+  return '<div class="wknav"><button class="del" data-act="wkPrev" aria-label="Semana anterior">'+LEFT+'</button><span>'+mes+'</span>'+(sel!==TODAY?'<button class="btn sm" data-act="selHoje">Hoje</button>':'')+'<button class="del" data-act="wkNext" aria-label="Próxima semana">'+RIGHT+'</button></div><div class="week">'+h+'</div>';}
+// o que aconteceu (ou está planejado) no dia escolhido na semana
+function dayCard(){
+  var d=ui.sel,ss=treinosNoDia(d),food=S.diario[d]||[],t=sumMac(food),plan=treinoById(S.semana[String(toD(d).getDay())]),fut=d>TODAY;
+  var h='<section class="card"><div class="head"><h2>'+(d===TODAY?'Hoje, ':'')+fmtD(d,true)+'</h2>'+(food.length?'<a class="small" href="#comida" data-act="verComidaDia">'+n0(t.kcal)+' kcal · ver comida</a>':'')+'</div>';
+  if(ss.length)h+=ss.map(function(s){return '<details><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px"><i style="width:12px;height:12px;border-radius:50%;background:'+corHex(s.cor)+';flex-shrink:0"></i><b style="flex:1">'+esc(s.treinoNome)+'</b><span class="small">'+s.ex.length+' exerc. · '+n0(volume(s))+' kg'+(s.min?' · '+s.min+' min':'')+'</span></summary>'+
+    '<ul class="list" style="margin-top:6px">'+s.ex.map(function(e){return '<li><span class="n">'+esc(e.nome)+'</span><span class="v">'+setsTxt(e.sets)+'</span></li>';}).join('')+'</ul></details>';}).join('');
+  else h+='<div class="empty">'+(fut?(plan?'Planejado: <b>'+esc(plan.nome)+'</b>':'Nenhum treino planejado.'):'Nenhum treino registrado neste dia.')+'</div>';
+  if(!fut&&d!==TODAY&&S.treinos.length&&!S.ativo)h+='<div class="small">Esqueceu de anotar? Registrar treino deste dia:</div><div class="chips">'+S.treinos.map(function(x){return '<button class="chip" data-act="iniciarDia" data-id="'+x.id+'" style="border-color:'+corHex(x.cor)+'">'+esc(x.nome)+'</button>';}).join('')+'</div>';
+  if(!food.length&&!fut)h+='<div><a class="btn sm" href="#comida" data-act="verComidaDia">Anotar comida deste dia</a></div>';
+  return h+'</section>';}
 function hdr(title,left,right){return '<div class="hdr"><div>'+(left||'')+'</div><h1>'+esc(title)+'</h1><div class="r">'+(right||'')+'</div></div>';}
 function flame(){return '<span class="streak" title="Semanas seguidas com pelo menos um treino">🔥 '+streak()+'</span>';}
 function tile(t){var l=lastSessaoDe(t.id),dd=l?daysBetween(l.data,TODAY):null;
@@ -375,8 +392,9 @@ function tile(t){var l=lastSessaoDe(t.id),dd=l?daysBetween(l.data,TODAY):null;
 /* ---------- telas ---------- */
 function vInicio(){
   if(isEmpty(S))return hdr('Meu Treino','','')+'<section class="welcome"><h2>Bem-vindo!</h2><p>Comece com os seus treinos Push, Pull, Legs, Upper e Lower já montados (com os exercícios que você usa), ou crie os seus do zero. Depois anote seu peso e defina sua meta de calorias.</p>'+
-    '<button class="btn primary" data-act="modelo">Carregar meus treinos (Push, Pull, Legs, Upper, Lower)</button><a class="btn" href="#treinos">Criar do zero</a></section>';
-  var h=hdr('Início',flame(),'');h+=weekStrip();
+    '<button class="btn primary" data-act="modelo">Carregar meus treinos (Push, Pull, Legs, Upper, Lower)</button><a class="btn" href="#treinos">Criar do zero</a>'+
+    (cloud.uid?'':'<div class="small">Já usa em outro aparelho? <a href="#perfil">Entre na sua conta</a> primeiro para trazer seus dados.</div>')+'</section>';
+  var h=hdr('Início',flame(),'');h+=weekStrip();if(ui.sel!==TODAY)h+=dayCard();
   if(S.ativo){var st=ativoStats();h+='<a class="banner" href="#t/'+S.ativo.treino+'" style="--c:'+corHex(S.ativo.cor)+'"><div><div style="font-size:13px;opacity:.85">Treino em andamento</div><b style="font-size:18px">'+esc(S.ativo.nome)+'</b> · <span data-dur>'+mmss((Date.now()-S.ativo.inicio)/1000)+'</span> · '+st.n+' séries</div><span class="btn sm" style="background:#fff;color:#111;border:0">Continuar</span></a>';}
   var sg=sugerido(),feitos=treinosNoDia(TODAY);
   if(!S.ativo){
@@ -392,7 +410,7 @@ function vInicio(){
   return h;
 }
 function vTreinos(){
-  var h=hdr('Treinos',flame(),'')+weekStrip();
+  var h=hdr('Treinos',flame(),'')+weekStrip()+dayCard();
   h+=S.treinos.length?'<div class="tiles">'+S.treinos.map(tile).join('')+'</div>':'<section class="welcome"><p>Nenhum treino ainda.</p><button class="btn primary" data-act="modelo">Carregar Push, Pull, Legs, Upper e Lower</button></section>';
   return h+'<button class="fab" data-act="novoTreino" aria-label="Novo treino">+</button>';
 }
@@ -402,6 +420,7 @@ function vTreino(tid){
   var h='<div style="--c:'+c+'"><div class="tdhead"><a class="circbtn" href="#treinos" aria-label="Voltar para treinos">'+DOWN+'</a><h1>'+esc(t.nome)+'</h1>'+
     (on?'<button class="go" data-act="finalizar">Finalizar</button>':'<button class="go" data-act="iniciar" data-id="'+t.id+'">Iniciar</button>')+'</div>'+
     '<div class="tdstats"><div><span>Duração</span><b class="dur" data-dur>'+(on?mmss((Date.now()-S.ativo.inicio)/1000):'00:00')+'</b></div><div><span>Volume</span><b>'+n0(st.vol)+' kg</b></div><div><span>Séries</span><b>'+st.n+'</b></div></div>'+
+    (on&&S.ativo.data!==TODAY?'<div class="preview" style="margin:8px 0">Registrando o treino de <b>'+fmtD(S.ativo.data,true)+'</b>. Marque as séries que você fez e toque em Finalizar.</div>':'')+
     (other?'<div class="preview" style="margin:8px 0">Você está com o treino <b>'+esc(S.ativo.nome)+'</b> em andamento. <a href="#t/'+S.ativo.treino+'">Voltar para ele</a></div>':'')+
     (on?'<div style="text-align:right"><button class="btn sm" data-act="descartar" style="border:0;background:transparent;color:var(--muted)">Descartar treino</button></div>':'');
   h+=list.map(function(e,xi){var open=!!ui.open[e.id];
@@ -513,11 +532,31 @@ function vAlimentos(){
     '<section class="card"><div class="head"><h2>Lista pronta</h2><input class="in" id="busca" placeholder="Buscar…" value="'+esc(ui.busca)+'" style="max-width:200px" aria-label="Buscar alimento"></div><div class="small">Valores aproximados por 100 g (Tabela TACO e rótulos comuns).</div>'+
     '<ul class="list">'+lista.map(function(f){return '<li><span class="n">'+esc(f.nome)+(f.u?' <span class="small">· 1 '+esc(f.un)+' ≈ '+f.u+(/\(ml\)/.test(f.nome)?' ml':' g')+'</span>':'')+'</span><span class="v">'+n0(f.kcal)+' kcal · P '+n1(f.prot)+'</span></li>';}).join('')+'</ul></section>';
 }
+// no app salvo na tela de início do iPhone e dentro do WhatsApp/Instagram a janela do Google não funciona
+function semPopup(){var ua=navigator.userAgent||'';return !!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||/FBAN|FBAV|Instagram|WhatsApp|Line\/|; wv\)/.test(ua));}
+function contaHtml(){
+  var h='<section class="card"><h2>Conta</h2>';
+  if(!window.FB)return h+'<div class="small">Carregando login…</div></section>';
+  if(cloud.uid){
+    h+='<div>Conectado como <b>'+esc(cloud.nome)+'</b>. Seus dados sincronizam entre os aparelhos.</div>';
+    if(!FB.temSenha()&&FB.emailAtual())h+='<div class="preview">Quer entrar no celular pelo ícone da tela de início (ou sem o Google)? Crie uma senha para <b>'+esc(FB.emailAtual())+'</b>. Depois é só entrar com esse e-mail e a senha, e os dados são os mesmos.</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><input class="in" type="password" id="novaSenha" placeholder="Nova senha (mín. 6)" autocomplete="new-password" style="max-width:220px"><button class="btn" data-act="criarSenha">Criar senha</button></div>';
+    else if(FB.temSenha())h+='<div class="small">Você também pode entrar com <b>'+esc(FB.emailAtual())+'</b> e sua senha.</div>';
+    return h+'<button class="btn" data-act="sair">Sair da conta</button><div class="small" id="status">'+esc(statusTxt)+'</div></section>';}
+  if(semPopup())h+='<div class="preview"><b>Aqui o login do Google não abre.</b> Isso acontece no app salvo na tela de início do iPhone e dentro do WhatsApp/Instagram. Use e-mail e senha abaixo. Se ainda não tem senha: entre com o Google no Safari ou no computador, vá em Perfil e toque em “Criar senha”.</div>';
+  h+='<button class="btn primary" data-act="entrar">Entrar com Google</button>'+
+    '<div class="small" style="text-align:center">ou</div>'+
+    '<label class="field">E-mail<input type="email" id="lgEmail" autocomplete="username" placeholder="seu@email.com"></label>'+
+    '<label class="field">Senha<input type="password" id="lgSenha" autocomplete="current-password"></label>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="entrarEmail">Entrar com e-mail</button><button class="btn" data-act="criarConta" style="border:0;background:transparent">Criar conta nova</button><button class="btn" data-act="esqueci" style="border:0;background:transparent">Esqueci a senha</button></div>'+
+    '<div class="small">Já entrou com o Google antes? Use o mesmo e-mail e uma senha criada em Perfil para ver os mesmos dados.</div>';
+  return h+'<div class="small" id="status">'+esc(statusTxt)+'</div></section>';
+}
+function errAuth(e){var c=e&&e.code||'';return ({'auth/invalid-credential':'E-mail ou senha incorretos. Se você sempre entrou com o Google, crie a senha primeiro em Perfil (entrando com o Google no Safari ou no computador).','auth/wrong-password':'Senha incorreta.','auth/user-not-found':'Não existe conta com esse e-mail.','auth/invalid-email':'E-mail inválido.','auth/email-already-in-use':'Já existe uma conta com esse e-mail. Use “Entrar com e-mail” (ou o Google).','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/operation-not-allowed':'O login por e-mail ainda não está ativado no Firebase.','auth/too-many-requests':'Muitas tentativas. Espere alguns minutos.','auth/requires-recent-login':'Por segurança, saia e entre de novo com o Google, depois crie a senha.','auth/provider-already-linked':'Essa conta já tem senha.','auth/credential-already-in-use':'Esse e-mail já tem outra conta com senha.','auth/network-request-failed':'Sem internet.'})[c]||('Não foi possível ('+(c||'erro')+').');}
 function vPerfil(){
   var p=S.perfil;
   return hdr('Perfil','','')+
-    '<section class="card"><h2>Conta</h2>'+(window.FB?(cloud.uid?'<div>Conectado como <b>'+esc(cloud.nome)+'</b>. Seus dados sincronizam entre os aparelhos.</div><button class="btn" data-act="sair">Sair da conta</button>':'<div class="small">Entre com o Google para salvar na nuvem e usar no celular e no computador.</div><button class="btn primary" data-act="entrar">Entrar com Google</button>'):'<div class="small">Carregando login…</div>')+
-    '<div class="small" id="status">'+esc(statusTxt)+'</div></section>'+
+    contaHtml()+
     '<section class="card"><h2>Seus dados</h2><div class="fields">'+
     '<label class="field">Sexo<select data-perfil="sexo"><option value="m"'+(p.sexo==='m'?' selected':'')+'>Masculino</option><option value="f"'+(p.sexo==='f'?' selected':'')+'>Feminino</option></select></label>'+
     '<label class="field">Idade<input class="num" inputmode="numeric" data-perfil="idade" value="'+esc(p.idade)+'"></label>'+
@@ -585,6 +624,13 @@ document.addEventListener('click',function(e){
   case 'iniciar':if(S.ativo){if(S.ativo.treino===t.dataset.id){location.hash='t/'+t.dataset.id;return;}if(!confirm('Você já está com o '+S.ativo.nome+' em andamento. Descartar ele e começar este?'))return;}
     iniciar(t.dataset.id);var ft=treinoById(t.dataset.id);if(ft&&ft.ex[0])ui.open[ft.ex[0].id]=true;commit();location.hash='t/'+t.dataset.id;return;
   case 'finalizar':finalizar();return;
+  case 'selDia':ui.sel=t.dataset.d;render();return;
+  case 'wkPrev':ui.sel=addDays(ui.sel,-7);render();return;
+  case 'wkNext':ui.sel=addDays(ui.sel,7);render();return;
+  case 'selHoje':ui.sel=TODAY;render();return;
+  case 'verComidaDia':ui.dia=ui.sel;return; // o link segue para #comida
+  case 'iniciarDia':if(S.ativo&&!confirm('Você já está com o '+S.ativo.nome+' em andamento. Descartar ele?'))return;
+    iniciar(t.dataset.id,ui.sel);var fd0=treinoById(t.dataset.id);if(fd0&&fd0.ex[0])ui.open[fd0.ex[0].id]=true;commit();location.hash='t/'+t.dataset.id;return;
   case 'descartar':if(confirm('Descartar este treino? Nada será salvo no histórico.')){S.ativo=null;stopTimer();commit();}return;
   case 'toggleEx':ui.open[t.dataset.id]=!ui.open[t.dataset.id];render();return;
   case 'okSet':if(!ex||!sw)return;
@@ -626,7 +672,15 @@ document.addEventListener('click',function(e){
   case 'delRef':var ri=+t.dataset.i,rn2=S.refeicoes[ri];if(confirm('Excluir a refeição “'+rn2+'” do plano?')){S.refeicoes.splice(ri,1);S.plano=S.plano.filter(function(x){return x.ref!==rn2;});commit();}return;
   case 'novoAlimento':S.alimentos.push({id:'c:'+uid(),nome:'Novo alimento',kcal:0,prot:0,carb:0,gord:0,u:0,un:''});commit();setTimeout(function(){var r=document.querySelectorAll('[data-fid] input[data-ff=nome]');if(r.length){r[r.length-1].focus();r[r.length-1].select();}},0);return;
   case 'delAlimento':var fr=t.closest('[data-fid]');if(fr&&confirm('Excluir este alimento?')){S.alimentos=S.alimentos.filter(function(x){return x.id!==fr.dataset.fid;});commit();}return;
-  case 'entrar':authIn();return;
+  case 'entrar':if(semPopup()){alert('Aqui (app da tela de início ou dentro do WhatsApp/Instagram) o login do Google não consegue abrir. Use e-mail e senha, ou abra o site pelo Safari/Chrome.');return;}authIn();return;
+  case 'entrarEmail':case 'criarConta':var em=document.getElementById('lgEmail').value.trim(),pw=document.getElementById('lgSenha').value;
+    if(!em||!pw){alert('Preencha e-mail e senha.');return;}
+    if(a==='criarConta'&&!confirm('Criar uma conta NOVA com '+em+'? Se você já entrou com o Google usando esse e-mail, não crie: entre com o Google e crie a senha em Perfil, para manter os mesmos dados.'))return;
+    (a==='criarConta'?FB.createEmail(em,pw):FB.signInEmail(em,pw)).catch(function(err){alert(errAuth(err));});return;
+  case 'esqueci':var em2=document.getElementById('lgEmail').value.trim();if(!em2){alert('Digite seu e-mail no campo acima.');return;}
+    FB.resetSenha(em2).then(function(){alert('Se existir uma conta com senha para '+em2+', chegou um e-mail para criar uma nova senha. Olhe também o spam.');},function(err){alert(errAuth(err));});return;
+  case 'criarSenha':var ns=document.getElementById('novaSenha').value;if(ns.length<6){alert('A senha precisa ter pelo menos 6 caracteres.');return;}
+    FB.criarSenha(ns).then(function(){alert('Senha criada! Agora no celular, em Perfil, entre com '+FB.emailAtual()+' e essa senha.');render();},function(err){alert(errAuth(err));});return;
   case 'sair':if(confirm('Sair da conta? Seus dados continuam salvos nela.'))FB.signOut();return;
   }
 });
@@ -697,7 +751,7 @@ if(window.FB)initCloud();else window.addEventListener('fb-ready',initCloud);
 // Firebase (mesmo projeto do site de finanças). Dados em users/<seu id>/apps/academia;
 // as regras do Firestore só deixam cada pessoa acessar os próprios dados.
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
-import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,EmailAuthProvider,linkWithCredential} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
 import {getFirestore,doc,onSnapshot,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 const app=initializeApp({
   apiKey:'AIzaSyA-a4WI6Jgq328SiycfiNmaqgeurRBA9Qg',
@@ -714,7 +768,14 @@ window.FB={
   signOut:()=>signOut(auth),
   onUser:cb=>onAuthStateChanged(auth,cb),
   watch:(uid,appId,cb,err)=>onSnapshot(ref(uid,appId),cb,err),
-  save:(uid,appId,json)=>setDoc(ref(uid,appId),{estado:json,atualizado:serverTimestamp()})
+  save:(uid,appId,json)=>setDoc(ref(uid,appId),{estado:json,atualizado:serverTimestamp()}),
+  // e-mail e senha: funciona também no app salvo na tela de início e dentro do WhatsApp
+  signInEmail:(e,p)=>signInWithEmailAndPassword(auth,e,p),
+  createEmail:(e,p)=>createUserWithEmailAndPassword(auth,e,p),
+  resetSenha:e=>sendPasswordResetEmail(auth,e),
+  temSenha:()=>!!(auth.currentUser&&auth.currentUser.providerData.some(p=>p.providerId==='password')),
+  emailAtual:()=>auth.currentUser?auth.currentUser.email:'',
+  criarSenha:p=>linkWithCredential(auth.currentUser,EmailAuthProvider.credential(auth.currentUser.email,p))
 };
 window.dispatchEvent(new Event('fb-ready'));
 </script>
