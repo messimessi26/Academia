@@ -225,7 +225,7 @@ var FOODS=[
 ['chocolate','Chocolate ao leite',540,7.2,59.6,30.3,25,'barrinha'],['refri','Refrigerante (ml)',42,0,10.5,0,350,'lata'],['cerveja','Cerveja (ml)',41,0.3,3.3,0,350,'lata'],['acucar','Açúcar',387,0,99.5,0,5,'colher de chá'],
 ['pizza','Pizza de muçarela',276,11,33,11,110,'fatia'],['hamburguer','Hambúrguer de lanchonete',260,13,25,12,200,'lanche'],
 ['paoforma','Pão de forma (sanduíche)',266,7.9,49.2,3.7,25,'fatia'],['frangodesf','Frango desfiado (peito cozido)',163,31.5,0,3.2,0,''],['requeijaolight','Requeijão light',180,11,4,13,15,'colher'],
-['queijoprato','Queijo prato',360,22.7,1.9,29.1,20,'fatia'],['ketchup','Ketchup',100,1.2,24,0.1,15,'sachê'],['patinhocru','Patinho moído cru',133,21.7,0,4.5,0,'']];
+['queijoprato','Queijo prato',360,22.7,1.9,29.1,20,'fatia'],['ketchup','Ketchup',100,1.2,24,0.1,15,'sachê'],['patinhocru','Patinho moído cru',133,21.7,0,4.5,0,''],['ovomexido','Ovo mexido',149,10,1.6,11,55,'ovo']];
 var BUILTIN={};FOODS.forEach(function(f){BUILTIN['b:'+f[0]]={id:'b:'+f[0],nome:f[1],kcal:f[2],prot:f[3],carb:f[4],gord:f[5],u:f[6],un:f[7]};});
 function foodById(id){return BUILTIN[id]||(S.alimentos||[]).find(function(x){return x.id===id;})||null;}
 function allFoods(){return Object.keys(BUILTIN).map(function(k){return BUILTIN[k];}).concat(S.alimentos||[]);}
@@ -588,6 +588,11 @@ function vRefeicoes(){
 function salvaTo(s,ctx,ref){var dst=ctx==='plano'?S.plano:(S.diario[ui.dia]||(S.diario[ui.dia]=[]));s.itens.forEach(function(e){dst.push({id:uid(),ref:ref,food:e.food,qtd:e.qtd,modo:e.modo});});}
 function vComida(sub){
   var h=hdr('Comida','','')+'<nav class="seg"><a href="#comida"'+(!sub?' aria-current="page"':'')+'>Diário</a><a href="#comida/refeicoes"'+(sub==='refeicoes'?' aria-current="page"':'')+'>Refeições</a><a href="#comida/dieta"'+(sub==='dieta'?' aria-current="page"':'')+'>Dieta</a><a href="#comida/alimentos"'+(sub==='alimentos'?' aria-current="page"':'')+'>Alimentos</a></nav>';
+  if(ui.pendente&&ui.pendente.i.length){var pd=ui.pendente,tp=sumMac(pd.i),refs=S.refeicoes.slice();if(refs.indexOf(pd.r)<0)refs.push(pd.r);
+    h+='<section class="card" style="border:2px solid var(--acc)"><h2>Adicionar ao diário?</h2><ul class="list">'+pd.i.map(function(e){var f=foodById(e.food),m=mac(e);return '<li><span class="n">'+esc(f.nome)+' <span class="small">· '+qtdTxt(e)+'</span></span><span class="v">'+n0(m.kcal)+' kcal · P '+n0(m.prot)+'</span></li>';}).join('')+'</ul>'+
+      '<div class="small"><b style="color:var(--text)">'+n0(tp.kcal)+' kcal</b> · proteína '+n0(tp.prot)+' g · carbo '+n0(tp.carb)+' g · gordura '+n0(tp.gord)+' g</div>'+
+      '<div class="fields"><label class="field">Refeição<select id="pdRef">'+refs.map(function(r){return '<option'+(r===pd.r?' selected':'')+'>'+esc(r)+'</option>';}).join('')+'</select></label><label class="field">Dia<input type="date" id="pdDia" value="'+pd.d+'"></label></div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="pdOk">Adicionar</button><button class="btn" data-act="pdCancel">Cancelar</button></div>'+(cloud.uid?'':'<div class="small" style="color:var(--warn)">Você não está logado: vai salvar só neste aparelho. Entre na conta em Perfil antes, se quiser sincronizar.</div>')+'</section>';}
   if(sub==='dieta')return h+vDieta();if(sub==='alimentos')return h+vAlimentos();if(sub==='refeicoes')return h+vRefeicoes();
   var d=ui.dia,list=S.diario[d]||[],t=sumMac(list);
   return h+'<section class="card"><div class="head"><button class="btn sm" data-act="diaPrev" aria-label="Dia anterior">‹</button><b style="text-align:center;flex:1">'+(d===TODAY?'Hoje, ':'')+fmtD(d,true)+'</b><button class="btn sm" data-act="diaNext" aria-label="Próximo dia">›</button></div>'+
@@ -651,7 +656,11 @@ function vPerfil(){
 
 /* ---------- roteamento ---------- */
 var TABS=[['inicio','Início','<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'],['treinos','Treinos','<path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/>'],['cardio','Cardio','<path d="M3 12h4l2-5 4 10 2-5h6"/>'],['comida','Comida','<path d="M7 3v8a3 3 0 006 0V3M10 3v18M17 3c-2 2-2 6 0 8v10"/>'],['corpo','Corpo','<path d="M3 20h18M5 16l5-6 4 3 6-8"/>'],['perfil','Perfil','<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>']];
-function parseHash(){var h=decodeURIComponent((location.hash||'').slice(1)),i=h.indexOf('/');R={v:i<0?h:h.slice(0,i),arg:i<0?'':h.slice(i+1)};if(['inicio','treinos','t','ex','cardio','comida','corpo','perfil'].indexOf(R.v)<0)R={v:'inicio',arg:''};}
+// link "#add/{...}" traz alimentos prontos para confirmar no diário (ex.: enviado pelo Claude)
+function lerLinkAdd(){var raw=(location.hash||'').slice(1);if(raw.indexOf('add/')!==0)return false;
+  try{var o=JSON.parse(decodeURIComponent(raw.slice(4)));ui.pendente={d:/^\d{4}-\d{2}-\d{2}$/.test(o.d||'')?o.d:TODAY,r:o.r||S.refeicoes[1]||'Almoço',i:(o.i||[]).filter(function(x){return foodById('b:'+x[0])||foodById(x[0]);}).map(function(x){var f=foodById('b:'+x[0])||foodById(x[0]);return {food:f.id,qtd:+x[1]||0,modo:x[2]==='un'&&f.u?'un':'g'};})};}catch(e){ui.pendente=null;alert('Não consegui ler o link de alimentos.');}
+  history.replaceState(null,'','#comida');return true;}
+function parseHash(){lerLinkAdd();var h=decodeURIComponent((location.hash||'').slice(1)),i=h.indexOf('/');R={v:i<0?h:h.slice(0,i),arg:i<0?'':h.slice(i+1)};if(['inicio','treinos','t','ex','cardio','comida','corpo','perfil'].indexOf(R.v)<0)R={v:'inicio',arg:''};}
 function render(){
   var tab=R.v==='t'||R.v==='ex'?'treinos':R.v;
   document.getElementById('tabbar').innerHTML=TABS.map(function(x){return '<a href="#'+x[0]+'"'+(x[0]===tab?' aria-current="page"':'')+'><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+x[2]+'</svg>'+x[1]+'</a>';}).join('');
@@ -752,6 +761,9 @@ document.addEventListener('click',function(e){
   case 'verMed':ui.med=t.dataset.k;render();return;
   case 'delSessao':var ss=S.sessoes.find(function(x){return x.id===t.dataset.id;});if(ss&&confirm('Excluir o treino de '+fmtD(ss.data)+' do histórico?')){S.sessoes.splice(S.sessoes.indexOf(ss),1);commit();}return;
   case 'addFood':var sidw=t.closest('[data-sid]');openFood(t.dataset.ctx,t.dataset.ref,sidw?sidw.dataset.sid:'');return;
+  case 'pdOk':var pdd=document.getElementById('pdDia').value||TODAY,pdr=document.getElementById('pdRef').value,dst=S.diario[pdd]||(S.diario[pdd]=[]);
+    ui.pendente.i.forEach(function(e){dst.push({id:uid(),ref:pdr,food:e.food,qtd:e.qtd,modo:e.modo});});ui.pendente=null;ui.dia=pdd;commit();return;
+  case 'pdCancel':ui.pendente=null;render();return;
   case 'carregarRefeicoes':modeloRefeicoes();commit();return;
   case 'novaSalva':var nsv={id:uid(),nome:'Nova refeição',itens:[]};S.salvas.push(nsv);commit();menuRenSalva(nsv.id);return;
   case 'menuSalva':var ms=salvaById(t.closest('[data-sid]').dataset.sid);openSheet('<h2>'+esc(ms.nome)+'</h2><button class="opt" data-act="renSalva">Renomear</button><button class="opt" data-act="dupSalva">Duplicar</button><button class="opt danger" data-act="delSalva">Excluir</button>',{sid:ms.id});return;
