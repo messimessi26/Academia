@@ -401,7 +401,9 @@ function cardioTxt(c){return tipoNome(c.tipo)+' · '+n0(c.min)+' min'+(temVel(c.
 /* ---------- balanço de calorias: comeu − gastou (metabolismo + musculação + cardio) ---------- */
 function gastoBase(){var b=bmr();return +S.prev.gasto||(b?Math.round(b*1.2/10)*10:0);}
 // musculação: pela duração do treino (MET ~5); sem duração, usa o "kcal por treino" da previsão
-function kcalMusc(s){var kg=pesoAtual()||75;return s.min?5*3.5*kg/200*s.min:(+S.prev.kcalTreino||300);}
+// MET 5 = musculação moderada a vigorosa (Compêndio de Atividades Físicas); a duração já inclui os descansos
+function kcalPorMin(){return 5*3.5*(pesoAtual()||75)/200;}
+function kcalMusc(s){var m=+s.min||0;return m>=10&&m<=240?kcalPorMin()*m:(+S.prev.kcalTreino||300);}
 function balancoDia(d){var food=S.diario[d]||[],comeu=sumMac(food).kcal,ss=treinosNoDia(d),mu=ss.reduce(function(a,s){return a+kcalMusc(s);},0),ca=cardioNoDia(d).reduce(function(a,c){return a+(c.kcal||0);},0),base=gastoBase();
   return {comeu:comeu,tem:food.length>0,base:base,musc:mu,cardio:ca,gasto:base+mu+ca,saldo:comeu-(base+mu+ca)};}
 // semana (dom→sáb): dias passados com comida anotada usam o real; dias sem registro, hoje e os próximos usam a meta de calorias e os treinos planejados
@@ -468,7 +470,7 @@ function weekStrip(){var sel=ui.sel,d=toD(sel),dom=addDays(sel,-d.getDay()),h=''
 function dayCard(){
   var d=ui.sel,ss=treinosNoDia(d),food=S.diario[d]||[],t=sumMac(food),plan=treinoById(S.semana[String(toD(d).getDay())]),fut=d>TODAY;
   var h='<section class="card"><div class="head"><h2>'+(d===TODAY?'Hoje, ':'')+fmtD(d,true)+'</h2>'+(food.length?'<a class="small" href="#comida" data-act="verComidaDia">'+n0(t.kcal)+' kcal · ver comida</a>':'')+'</div>';
-  if(ss.length)h+=ss.map(function(s){return '<details><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px"><i style="width:12px;height:12px;border-radius:50%;background:'+corHex(s.cor)+';flex-shrink:0"></i><b style="flex:1">'+esc(s.treinoNome)+'</b><span class="small">'+s.ex.length+' exerc. · '+n0(volume(s))+' kg'+(s.min?' · '+s.min+' min':'')+'</span></summary>'+
+  if(ss.length)h+=ss.map(function(s){return '<details><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px"><i style="width:12px;height:12px;border-radius:50%;background:'+corHex(s.cor)+';flex-shrink:0"></i><b style="flex:1">'+esc(s.treinoNome)+'</b><span class="small">'+s.ex.length+' exerc. · '+n0(volume(s))+' kg'+(s.min?' · '+s.min+' min':'')+' · 🔥≈'+n0(kcalMusc(s))+' kcal</span></summary>'+
     '<ul class="list" style="margin-top:6px">'+s.ex.map(function(e){return '<li><span class="n">'+esc(e.nome)+'</span><span class="v">'+setsTxt(e.sets)+'</span></li>';}).join('')+'</ul><a class="btn sm" href="#resumo/'+s.id+'">Ver resumo do treino</a></details>';}).join('');
   else h+='<div class="empty">'+(fut?(plan?'Planejado: <b>'+esc(plan.nome)+'</b>':'Nenhum treino planejado.'):'Nenhum treino registrado neste dia.')+'</div>';
   var cc=cardioNoDia(d);if(cc.length)h+='<ul class="list">'+cc.map(function(c){return '<li><i class="cdot" style="width:12px;height:12px;flex-shrink:0"></i><span class="n">'+esc(cardioTxt(c))+'</span><span class="v">≈ '+n0(c.kcal)+' kcal</span></li>';}).join('')+'</ul>';
@@ -491,7 +493,7 @@ function vInicio(){
   if(S.ativo){var st=ativoStats();h+='<a class="banner" href="#t/'+S.ativo.treino+'" style="--c:'+corHex(S.ativo.cor)+'"><div><div style="font-size:13px;opacity:.85">Treino em andamento</div><b style="font-size:18px">'+esc(S.ativo.nome)+'</b> · <span data-dur>'+mmss((Date.now()-S.ativo.inicio)/1000)+'</span> · '+st.n+' séries</div><span class="btn sm" style="background:#fff;color:#111;border:0">Continuar</span></a>';}
   var sg=sugerido(),feitos=treinosNoDia(TODAY);
   if(!S.ativo){
-    if(feitos.length)h+='<section class="card"><h2>Treino de hoje feito ✓</h2><div>'+feitos.map(function(s){return '<b>'+esc(s.treinoNome)+'</b> · '+s.ex.length+' exercícios · '+n0(volume(s))+' kg de volume'+(s.min?' · '+s.min+' min':'');}).join('<br>')+'</div></section>';
+    if(feitos.length)h+='<section class="card"><h2>Treino de hoje feito ✓</h2><div>'+feitos.map(function(s){return '<b>'+esc(s.treinoNome)+'</b> · '+s.ex.length+' exercícios · '+n0(volume(s))+' kg de volume'+(s.min?' · '+s.min+' min':'')+' · 🔥 ≈ '+n0(kcalMusc(s))+' kcal · <a href="#resumo/'+s.id+'">resumo</a>';}).join('<br>')+'</div></section>';
     else if(sg)h+='<section class="card"><div class="head"><h2>Sugestão para hoje</h2><a class="small" href="#treinos">Ver todos</a></div><div class="tiles" style="grid-template-columns:1fr">'+tile(sg)+'</div><button class="btn primary" data-act="iniciar" data-id="'+sg.id+'" style="background:'+corHex(sg.cor)+';border-color:'+corHex(sg.cor)+'">Iniciar '+esc(sg.nome)+'</button></section>';}
   var cdh=cardioNoDia(TODAY);
   h+='<section class="card"><div class="head"><h2>Cardio de hoje</h2><a class="btn sm" href="#cardio" data-act="cardioHoje">+ Cardio</a></div>'+
@@ -516,7 +518,8 @@ function vResumo(id){
     '<div class="stat"><div class="l">Séries</div><div class="v">'+n.series+'</div>'+delta(n.series,p&&p.series,n0)+'</div>'+
     '<div class="stat"><div class="l">Repetições</div><div class="v">'+n.reps+'</div>'+delta(n.reps,p&&p.reps,n0)+'</div>'+
     '<div class="stat"><div class="l">Duração</div><div class="v">'+(n.min?n.min+' min':'—')+'</div>'+(n.min&&p&&p.min?delta(n.min,p.min,n0,' min'):'')+'</div></div>'+
-    '<div class="small">Exercícios: <b>'+n.ex+'</b> · maior carga do dia: <b>'+n1(n.kgMax)+' kg</b>'+(n.min?' · ritmo: <b>'+n0(n.vol/n.min)+' kg/min</b>':'')+'</div></section>';
+    '<div class="small">Exercícios: <b>'+n.ex+'</b> · maior carga do dia: <b>'+n1(n.kgMax)+' kg</b>'+(n.min?' · ritmo: <b>'+n0(n.vol/n.min)+' kg/min</b>':'')+'</div>'+
+    '<div class="preview">🔥 Gasto estimado do treino: <b style="color:var(--text);font-size:16px">≈ '+n0(kcalMusc(s))+' kcal</b><br><span class="small">'+(s.min>=10&&s.min<=240?s.min+' min de musculação × '+n1(kcalPorMin())+' kcal/min (MET 5, com '+n1(pesoAtual()||75)+' kg'+(pesoAtual()?'':' — anote seu peso em Corpo')+')':'Sem duração confiável: usei o valor de “kcal por treino” da previsão ('+n0(+S.prev.kcalTreino||300)+'), que você pode mudar em Corpo.')+'. Entra no balanço de calorias do dia.</span></div></section>';
   if(rec.length)h+='<section class="card"><h2>🏆 Recordes de carga</h2><ul class="list">'+rec.map(function(r){return '<li><span class="n">'+esc(r.nome)+'</span><span class="v pos">'+n1(r.kg)+' kg <span class="small">(antes '+n1(r.antes)+')</span></span></li>';}).join('')+'</ul></section>';
   var ex=s.ex.map(function(e){return {nome:e.nome,vol:e.sets.reduce(function(a,x){return a+x.reps*x.carga;},0),sets:e.sets};});
   h+='<section class="card"><h2>Volume por exercício</h2>'+chart(ex.map(function(e){return iniciais(e.nome);}),[{name:'Volume',c:c,bar:true,v:ex.map(function(e){return e.vol;})}],{bars:true,zero:true,unit:' kg'})+
@@ -530,13 +533,13 @@ function vEvolucao(){
   if(!ss.length)return h+'<section class="card"><div class="empty">Finalize treinos para ver a evolução aqui.</div></section>';
   var ns=ss.map(sessNum),lab=ss.map(function(s){return fmtD(s.data);}),cores=ss.map(function(s){return corHex(s.cor);}),tot=ns.reduce(function(a,n){a.vol+=n.vol;a.series+=n.series;a.reps+=n.reps;a.min+=n.min;return a;},{vol:0,series:0,reps:0,min:0});
   var ult=ns.slice(-4),ant=ns.slice(-8,-4),med=function(l,k){return l.length?l.reduce(function(a,n){return a+n[k];},0)/l.length:null;};
-  h+='<section class="card"><div class="stats"><div class="stat"><div class="l">Treinos</div><div class="v">'+ss.length+'</div></div><div class="stat"><div class="l">Volume total</div><div class="v">'+(tot.vol>=100000?n0(tot.vol/1000)+' t':n0(tot.vol)+' kg')+'</div></div><div class="stat"><div class="l">Séries totais</div><div class="v">'+n0(tot.series)+'</div></div><div class="stat"><div class="l">Tempo total</div><div class="v">'+Math.floor(tot.min/60)+'h'+pad(tot.min%60)+'</div></div></div>'+
+  h+='<section class="card"><div class="stats"><div class="stat"><div class="l">Treinos</div><div class="v">'+ss.length+'</div></div><div class="stat"><div class="l">Volume total</div><div class="v">'+(tot.vol>=100000?n0(tot.vol/1000)+' t':n0(tot.vol)+' kg')+'</div></div><div class="stat"><div class="l">Séries totais</div><div class="v">'+n0(tot.series)+'</div></div><div class="stat"><div class="l">Tempo total</div><div class="v">'+Math.floor(tot.min/60)+'h'+pad(tot.min%60)+'</div></div><div class="stat"><div class="l">Calorias (estimadas)</div><div class="v">≈ '+n0(ss.reduce(function(a,s){return a+kcalMusc(s);},0))+'</div></div><div class="stat"><div class="l">Média por treino</div><div class="v">≈ '+n0(ss.reduce(function(a,s){return a+kcalMusc(s);},0)/ss.length)+' kcal</div></div></div>'+
     (ant.length?'<div class="small">Média dos últimos '+ult.length+' treinos vs. os '+ant.length+' anteriores: volume '+fmtPct(med(ult,'vol'),med(ant,'vol'))+' · séries '+fmtPct(med(ult,'series'),med(ant,'series'))+'</div>':'')+'</section>';
   h+='<section class="card"><h2>Volume por treino</h2><div class="small">Soma de peso × repetições de todas as séries.</div>'+chartCores(lab,ns.map(function(n){return n.vol;}),cores,' kg')+'</section>';
   h+='<section class="card"><h2>Séries e repetições por treino</h2>'+chart(lab,[{name:'Séries',c:'var(--prot)',v:ns.map(function(n){return n.series;})}],{zero:true})+'<div class="keys"><span><i style="background:var(--prot)"></i>Séries</span></div>'+
     chart(lab,[{name:'Repetições',c:'var(--gord)',v:ns.map(function(n){return n.reps;})}],{zero:true})+'<div class="keys"><span><i style="background:var(--gord)"></i>Repetições</span></div></section>';
   if(ns.some(function(n){return n.min;}))h+='<section class="card"><h2>Duração e ritmo</h2>'+chart(lab,[{name:'Minutos',c:'var(--carb)',v:ns.map(function(n){return n.min||null;})}],{zero:true,unit:' min'})+'<div class="keys"><span><i style="background:var(--carb)"></i>Minutos por treino</span></div></section>';
-  h+='<section class="card"><h2>Treinos</h2><ul class="list">'+ss.slice().reverse().slice(0,30).map(function(s){var n=sessNum(s);return '<li style="cursor:pointer" data-go="#resumo/'+s.id+'"><i style="width:10px;height:10px;border-radius:50%;background:'+corHex(s.cor)+';flex-shrink:0"></i><span class="n"><b>'+fmtD(s.data)+'</b> · '+esc(s.treinoNome)+'</span><span class="v">'+n0(n.vol)+' kg · '+n.series+' séries'+(n.min?' · '+n.min+' min':'')+'</span>'+RIGHT+'</li>';}).join('')+'</ul></section>';
+  h+='<section class="card"><h2>Treinos</h2><ul class="list">'+ss.slice().reverse().slice(0,30).map(function(s){var n=sessNum(s);return '<li style="cursor:pointer" data-go="#resumo/'+s.id+'"><i style="width:10px;height:10px;border-radius:50%;background:'+corHex(s.cor)+';flex-shrink:0"></i><span class="n"><b>'+fmtD(s.data)+'</b> · '+esc(s.treinoNome)+'</span><span class="v">'+n0(n.vol)+' kg · '+n.series+' séries'+(n.min?' · '+n.min+' min':'')+' · ≈'+n0(kcalMusc(s))+' kcal</span>'+RIGHT+'</li>';}).join('')+'</ul></section>';
   return h;
 }
 function fmtPct(a,b){if(a==null||!b)return '—';var p=Math.round((a-b)/b*100);return '<b class="'+(p>=0?'pos':'neg')+'">'+(p>0?'+':'')+p+'%</b>';}
@@ -557,6 +560,7 @@ function vTreino(tid){
   var h='<div style="--c:'+c+'"><div class="tdhead"><a class="circbtn" href="#treinos" aria-label="Voltar para treinos">'+DOWN+'</a><h1>'+esc(t.nome)+'</h1>'+
     (on?'<button class="go" data-act="finalizar">Finalizar</button>':'<button class="go" data-act="iniciar" data-id="'+t.id+'">Iniciar</button>')+'</div>'+
     '<div class="tdstats"><div><span>Duração</span><b class="dur" data-dur>'+(on?mmss((Date.now()-S.ativo.inicio)/1000):'00:00')+'</b></div><div><span>Volume</span><b>'+n0(st.vol)+' kg</b></div><div><span>Séries</span><b>'+st.n+'</b></div></div>'+
+    (on?'<div class="small" style="text-align:center;margin:-8px 0 8px">🔥 ≈ <b data-kcal>'+n0(kcalPorMin()*(Date.now()-S.ativo.inicio)/60000)+'</b> kcal gastas até agora</div>':'')+
     (on&&S.ativo.data!==TODAY?'<div class="preview" style="margin:8px 0">Registrando o treino de <b>'+fmtD(S.ativo.data,true)+'</b>. Marque as séries que você fez e toque em Finalizar.</div>':'')+
     (other?'<div class="preview" style="margin:8px 0">Você está com o treino <b>'+esc(S.ativo.nome)+'</b> em andamento. <a href="#t/'+S.ativo.treino+'">Voltar para ele</a></div>':'')+
     (on?'<div style="text-align:right"><button class="btn sm" data-act="descartar" style="border:0;background:transparent;color:var(--muted)">Descartar treino</button></div>':'');
@@ -774,7 +778,8 @@ function render(){
 function route(){parseHash();render();window.scrollTo(0,0);}
 window.addEventListener('hashchange',route);
 function refocus(id){if(!id)return;setTimeout(function(){var el=document.getElementById(id);if(el){el.focus();try{el.select();}catch(e){}}},0);}
-setInterval(function(){if(!S||!S.ativo)return;document.querySelectorAll('[data-dur]').forEach(function(el){el.textContent=mmss((Date.now()-S.ativo.inicio)/1000);});},1000);
+setInterval(function(){if(!S||!S.ativo)return;document.querySelectorAll('[data-dur]').forEach(function(el){el.textContent=mmss((Date.now()-S.ativo.inicio)/1000);});
+  document.querySelectorAll('[data-kcal]').forEach(function(el){el.textContent=n0(kcalPorMin()*(Date.now()-S.ativo.inicio)/60000);});},1000);
 
 /* ---------- cronômetro de descanso ---------- */
 var tick=null;
