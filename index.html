@@ -315,14 +315,15 @@ function initCloud(){
   FB.onUser(function(u){
     if(cloud.unsub){cloud.unsub();cloud.unsub=null;}
     cloud.uid=u?u.uid:null;cloud.nome=u?(u.displayName||u.email||''):'';
-    if(!u){store={kind:'local'};setStatus('Salvo neste aparelho');render();return;}
+    if(!u){store={kind:'local'};setStatus('Salvo neste aparelho');ui.cloudPronto=true;aplicarRelogio();render();return;}
+    ui.cloudPronto=false;
     setStatus('Conectando…');var first=true;
     cloud.unsub=FB.watch(u.uid,APP_ID,function(snap){
       if(snap.metadata.hasPendingWrites)return;
       var remote=null;if(snap.exists()){try{remote=migrate(JSON.parse((snap.data()||{}).estado));}catch(e){}}
       if(first){first=false;store={kind:'cloud'};
         if(remote){S=remote;writeLocal();}else if(!isEmpty(S))flush();
-        setStatus('Sincronizado com a sua conta');render();return;}
+        setStatus('Sincronizado com a sua conta');ui.cloudPronto=true;aplicarRelogio();render();return;}
       if(remote){S=remote;writeLocal();render();setStatus('Sincronizado com a sua conta');}
     },function(){store={kind:'local'};setStatus('Sem acesso à conta: salvo neste aparelho');});
   });
@@ -405,7 +406,21 @@ function gastoBase(){var b=bmr();return +S.prev.gasto||(b?Math.round(b*1.2/10)*1
 function kcalPorMin(){return 5*3.5*(pesoAtual()||75)/200;}
 function kcalMusc(s){var m=+s.min||0;return m>=10&&m<=240?kcalPorMin()*m:(+S.prev.kcalTreino||300);}
 function balancoDia(d){var food=S.diario[d]||[],comeu=sumMac(food).kcal,ss=treinosNoDia(d),mu=ss.reduce(function(a,s){return a+kcalMusc(s);},0),ca=cardioNoDia(d).reduce(function(a,c){return a+(c.kcal||0);},0),base=gastoBase();
+  // com dados do relógio: gasto real = energia em repouso + energia ativa (já inclui treino e cardio)
+  var w=(S.saude||{})[d];if(w&&w.ativa>0){var rep=w.repouso>0?w.repouso:(bmr()||base/1.2);return {comeu:comeu,tem:food.length>0,base:rep,musc:mu,cardio:ca,ativa:w.ativa,relogio:true,gasto:rep+w.ativa,saldo:comeu-(rep+w.ativa)};}
   return {comeu:comeu,tem:food.length>0,base:base,musc:mu,cardio:ca,gasto:base+mu+ca,saldo:comeu-(base+mu+ca)};}
+/* ---------- dados do relógio (Amazfit → Zepp → Saúde do iPhone → Atalho → link #saude/...) ---------- */
+function lerLinkRelogio(){var raw=(location.hash||'').slice(1);if(raw.indexOf('saude/')!==0)return false;var p={};
+  raw.slice(6).split('&').forEach(function(kv){var i=kv.indexOf('=');if(i<1)return;var k=decodeURIComponent(kv.slice(0,i)).trim().toLowerCase(),v=decodeURIComponent(kv.slice(i+1)).trim();p[k]=v;});
+  var d=/^\d{4}-\d{2}-\d{2}$/.test(p.d||'')?p.d:TODAY,o={d:d};['ativa','repouso','passos','fc','peso'].forEach(function(k){var n=pnum(p[k]);if(n>0)o[k]=Math.round(n*10)/10;});
+  ui.relPend=o;history.replaceState(null,'','#inicio');if(ui.cloudPronto)aplicarRelogio();setTimeout(function(){if(ui.relPend){aplicarRelogio();render();}},9000);return true;}
+function aplicarRelogio(){var p=ui.relPend;if(!p||!S)return;ui.relPend=null;S.saude=S.saude||{};var o=Object.assign({},S.saude[p.d]||{});
+  ['ativa','repouso','passos','fc'].forEach(function(k){if(p[k]!=null)o[k]=p[k];});o.em=Date.now();S.saude[p.d]=o;if(p.peso&&p.peso>30&&p.peso<300)setPeso(p.d,p.peso);
+  ui.relMsg='Dados do relógio de '+fmtD(p.d)+' salvos ✓';save();}
+function relogioCard(){var w=(S.saude||{})[TODAY],ult=Object.keys(S.saude||{}).sort().pop();
+  if(!w&&!ult)return '';var d=w?TODAY:ult,x=S.saude[d];
+  return '<section class="card"><div class="head"><h2>⌚ Relógio'+(d!==TODAY?' <span class="small">(último: '+fmtD(d)+')</span>':'')+'</h2><span class="small">'+(ui.relMsg?esc(ui.relMsg):x.em?'sincronizado às '+new Date(x.em).toTimeString().slice(0,5):'')+'</span></div>'+
+    '<div class="stats"><div class="stat"><div class="l">Calorias ativas</div><div class="v">'+(x.ativa?n0(x.ativa):'—')+'</div></div><div class="stat"><div class="l">Em repouso</div><div class="v">'+(x.repouso?n0(x.repouso):'—')+'</div></div><div class="stat"><div class="l">Passos</div><div class="v">'+(x.passos?n0(x.passos):'—')+'</div></div><div class="stat"><div class="l">FC média</div><div class="v">'+(x.fc?n0(x.fc)+' bpm':'—')+'</div></div></div></section>';}
 // semana (dom→sáb): dias passados com comida anotada usam o real; dias sem registro, hoje e os próximos usam a meta de calorias e os treinos planejados
 function semanaPrev(){var dom=addDays(TODAY,-toD(TODAY).getDay()),meta=+S.meta.kcal||0,cardMed=cardioSemanal()/7,dias=[],tot=0,ok=gastoBase()>0;
   for(var i=0;i<7;i++){var d=addDays(dom,i),b=balancoDia(d),real=d<TODAY&&b.tem,saldo;
@@ -418,9 +433,9 @@ function balancoHtml(compacto){
   var b=balancoDia(TODAY),pa=pesoAtual();
   if(!b.base)return '<section class="card"><h2>Balanço de calorias</h2><div class="small">Para calcular quanto você gasta por dia, preencha idade e altura em <a href="#perfil">Perfil</a> e anote seu peso em <a href="#corpo">Corpo</a>.</div></section>';
   var def=-b.saldo,h='<section class="card"><div class="head"><h2>Balanço de hoje</h2><span class="small">até agora</span></div>';
-  h+='<div class="stats"><div class="stat"><div class="l">Comeu</div><div class="v">'+n0(b.comeu)+' kcal</div></div><div class="stat"><div class="l">Gastou (estimado)</div><div class="v">'+n0(b.gasto)+' kcal</div></div>'+
+  h+='<div class="stats"><div class="stat"><div class="l">Comeu</div><div class="v">'+n0(b.comeu)+' kcal</div></div><div class="stat"><div class="l">Gastou ('+(b.relogio?'relógio':'estimado')+')</div><div class="v">'+n0(b.gasto)+' kcal</div></div>'+
     '<div class="stat"><div class="l">'+(def>=0?'Déficit':'Superávit')+'</div><div class="v '+(def>=0?'pos':'neg')+'">'+n0(Math.abs(def))+' kcal</div></div><div class="stat"><div class="l">'+(def>=0?'Gordura queimada':'Pode virar gordura')+'</div><div class="v '+(def>=0?'pos':'neg')+'">≈ '+n0(Math.abs(def)/7.7)+' g</div></div></div>'+
-    '<div class="small">Gasto = metabolismo '+n0(b.base)+(b.musc?' + musculação '+n0(b.musc):'')+(b.cardio?' + cardio '+n0(b.cardio):'')+' kcal.'+(b.tem?'':' <b style="color:var(--warn)">Nada anotado hoje na comida: o déficit está alto porque falta registrar.</b>')+'</div>';
+    '<div class="small">'+(b.relogio?'⌚ Gasto medido pelo relógio: repouso '+n0(b.base)+' + ativas '+n0(b.ativa)+' kcal (já inclui treino e cardio).':'Gasto estimado = metabolismo '+n0(b.base)+(b.musc?' + musculação '+n0(b.musc):'')+(b.cardio?' + cardio '+n0(b.cardio):'')+' kcal.')+(b.tem?'':' <b style="color:var(--warn)">Nada anotado hoje na comida: o déficit está alto porque falta registrar.</b>')+'</div>';
   var w=semanaPrev();
   if(w.ok){var mx=Math.max.apply(null,w.dias.map(function(x){return Math.abs(x.saldo||0);}).concat([1]));
     h+='<div style="border-top:1px solid var(--soft);padding-top:10px"><div class="head"><b>Esta semana</b><span class="small">'+(w.kg<=0?'perda esperada':'ganho esperado')+'</span></div>'+
@@ -500,7 +515,7 @@ function vInicio(){
     (cdh.length?'<div class="big">≈ '+n0(cdh.reduce(function(a,c){return a+c.kcal;},0))+' <small>kcal · '+n0(cdh.reduce(function(a,c){return a+c.min;},0))+' min</small></div><div class="small">'+cdh.map(function(c){return esc(cardioTxt(c));}).join('<br>')+'</div>':'<div class="empty">Nenhum cardio hoje.</div>')+'</section>';
   var tot=sumMac(S.diario[TODAY]||[]);
   h+='<section class="card"><div class="head"><h2>Alimentação de hoje</h2><a class="btn sm" href="#comida">+ Adicionar</a></div>'+kcalBlock(tot,S.meta)+'</section>';
-  h+=balancoHtml(true);
+  h+=balancoHtml(true)+relogioCard();
   var pv=previsao(),pa=pesoAtual();
   h+='<section class="card"><div class="head"><h2>Corpo</h2><a class="small" href="#corpo">Peso, medidas e previsão</a></div>'+
     (pa?'<div class="big">'+n1(pa)+' <small>kg</small></div>':'<div class="empty">Anote seu peso para acompanhar.</div>')+
@@ -766,7 +781,7 @@ var TABS=[['inicio','Início','<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"
 function lerLinkAdd(){var raw=(location.hash||'').slice(1);if(raw.indexOf('add/')!==0)return false;
   try{var o=JSON.parse(decodeURIComponent(raw.slice(4)));ui.pendente={d:/^\d{4}-\d{2}-\d{2}$/.test(o.d||'')?o.d:TODAY,r:o.r||S.refeicoes[1]||'Almoço',i:(o.i||[]).filter(function(x){return foodById('b:'+x[0])||foodById(x[0]);}).map(function(x){var f=foodById('b:'+x[0])||foodById(x[0]);return {food:f.id,qtd:+x[1]||0,modo:x[2]==='un'&&f.u?'un':'g'};})};}catch(e){ui.pendente=null;alert('Não consegui ler o link de alimentos.');}
   history.replaceState(null,'','#comida');return true;}
-function parseHash(){lerLinkAdd();var h=decodeURIComponent((location.hash||'').slice(1)),i=h.indexOf('/');R={v:i<0?h:h.slice(0,i),arg:i<0?'':h.slice(i+1)};if(['inicio','treinos','t','ex','resumo','evolucao','cardio','comida','corpo','perfil'].indexOf(R.v)<0)R={v:'inicio',arg:''};}
+function parseHash(){lerLinkAdd();lerLinkRelogio();var h=decodeURIComponent((location.hash||'').slice(1)),i=h.indexOf('/');R={v:i<0?h:h.slice(0,i),arg:i<0?'':h.slice(i+1)};if(['inicio','treinos','t','ex','resumo','evolucao','cardio','comida','corpo','perfil'].indexOf(R.v)<0)R={v:'inicio',arg:''};}
 function render(){
   var tab=['t','ex','resumo','evolucao'].indexOf(R.v)>-1?'treinos':R.v;
   document.getElementById('tabbar').innerHTML=TABS.map(function(x){return '<a href="#'+x[0]+'"'+(x[0]===tab?' aria-current="page"':'')+'><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+x[2]+'</svg>'+x[1]+'</a>';}).join('');
