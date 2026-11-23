@@ -859,8 +859,14 @@ function render(){
   var v=document.getElementById('view');if(!S){v.innerHTML='<p class="small">Carregando…</p>';return;}
   v.innerHTML=R.v==='treinos'?vTreinos():R.v==='t'?vTreino(R.arg):R.v==='ex'?vExercicio(R.arg):R.v==='resumo'?vResumo(R.arg):R.v==='evolucao'?vEvolucao():R.v==='cardio'?vCardio():R.v==='comida'?vComida(R.arg):R.v==='corpo'?vCorpo(R.arg):R.v==='perfil'?vPerfil():vInicio();
   document.getElementById('dlFoods').innerHTML=allFoods().map(function(f){return '<option value="'+esc(f.nome)+'">';}).join('');
-  markTheme();
+  markTheme();hubResumo();
 }
+// site central: resumo do dia para a tela Início (fica só neste navegador; vai para o site central quando aberto dentro dele)
+function hubResumo(){if(!S)return;try{var food=S.diario[TODAY]||[],t=sumMac(food),plan=treinoById(S.semana[String(toD(TODAY).getDay())]),feitos=treinosNoDia(TODAY),b=balancoDia(TODAY);
+  hubEnviar('academia',{em:Date.now(),kcal:Math.round(t.kcal),prot:Math.round(t.prot),metaKcal:+S.meta.kcal||0,metaProt:+S.meta.prot||0,anotou:food.length>0,
+    plano:plan?plan.nome:'',feito:feitos.map(function(s){var x=treinoById(s.treino);return s.treinoNome||(x&&x.nome)||'Treino';}),ativo:S.ativo?{nome:S.ativo.nome,ini:S.ativo.inicio}:null,
+    gasto:Math.round(b.gasto),relogio:!!b.relogio,peso:pesoAtual()||0});}catch(e){}}
+function hubEnviar(app,r){try{localStorage.setItem('resumo-'+app,JSON.stringify(r));}catch(e){}try{if(window.parent!==window)window.parent.postMessage({hub:app,r:r},location.origin);}catch(e){}}
 function route(){parseHash();render();window.scrollTo(0,0);}
 window.addEventListener('hashchange',route);
 function refocus(id){if(!id)return;setTimeout(function(){var el=document.getElementById(id);if(el){el.focus();try{el.select();}catch(e){}}},0);}
